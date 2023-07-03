@@ -1,7 +1,9 @@
 import { Poppins } from 'next/font/google'
 import { ReactNode } from 'react'
 
-import './globals.css'
+import MenuNavigation from '@/components/MenuNavigation/MenuNavigation'
+
+import '../globals.css'
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -9,14 +11,18 @@ const poppins = Poppins({
 })
 
 export const metadata = {
-  title: 'Plantae',
+  title: 'Plantae | Início',
   description: 'Plantae | Sua plantação no digital',
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className={poppins.className}>{children}</body>
+      <body className={poppins.className}>
+        <div className="pb-[112px]">{children}</div>
+
+        <MenuNavigation />
+      </body>
     </html>
   )
 }
