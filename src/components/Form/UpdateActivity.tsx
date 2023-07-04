@@ -2,45 +2,45 @@
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
-import { parseCookies } from 'nookies'
+import { useEffect, useState } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
 
 import { Form } from '@/components/Form/parts'
+
+import { Activity } from '@/model/Activity'
+import { AgriculturalInput } from '@/model/AgriculturalInput'
+import { Plantation } from '@/model/Plantation'
+import { User } from '@/model/User'
 
 import {
   UpdateActivityData,
   updateActivitySchema,
 } from '@/schemas/updateActivity'
-import axios from 'axios'
-import { useEffect, useState } from 'react'
+
+import { ActivityService } from '@/service/activity/ActivityClientService'
+import { AgriculturalInputService } from '@/service/agriculturalInput/AgriculturalInputClientService'
+import { PlantationService } from '@/service/plantation/PlantationClientService'
+import { UserService } from '@/service/user/UserClientService'
+
+import { formatDate } from '@/utils/formatDate'
+import { translateDate } from '@/utils/translateDate'
 
 interface UpdateActivityFormProps {
-  agriculturalInputs: any[]
-  plantations: any[]
-  userAuth: any
-  data: UpdateActivityData
-  activityId: string
+  activity: Activity
+  agriculturalInputs: AgriculturalInput[]
+  plantations: Plantation[]
+  user: User
 }
 
-async function getAssociates(plantationId: string) {
-  const { 'plantae.token': token } = parseCookies()
+async function getAssociates(plantationId: number) {
+  const plantationService = new PlantationService()
+  const associates = await plantationService.getAssociates(plantationId)
 
-  const res = await fetch(
-    `http://0.0.0.0/api/plantations/${plantationId}/associates`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    },
-  )
-
-  const response = await res.json()
-
-  if (!response.object) return
-
-  return response.object
+  return associates
 }
 
 export default function UpdateActivityForm(props: UpdateActivityFormProps) {
-  const [users, setUsers] = useState<any[]>([])
+  const [users, setUsers] = useState<User[]>([])
 
   const router = useRouter()
 
@@ -51,52 +51,77 @@ export default function UpdateActivityForm(props: UpdateActivityFormProps) {
   const { watch } = updateActivityForm
 
   async function handleUpdateActivity(data: UpdateActivityData) {
-    const { 'plantae.token': token } = parseCookies()
-
-    const response = await axios.post(
-      `http://0.0.0.0/api/activities/${props.activityId}`,
-      data,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      },
+    const plantationService = new PlantationService()
+    const plantation = await plantationService.getPlantation(
+      parseInt(data.plantationId),
     )
 
-    if (!response.data.object) return
+    const userService = new UserService()
+    const user = await userService.getUser(parseInt(data.chargeIn))
+
+    const agriculturalInputService = new AgriculturalInputService()
+    const agriculturalInput =
+      await agriculturalInputService.getAgriculturalInput(
+        parseInt(data.agriculturalInputId),
+      )
+
+    const activity = new Activity({
+      ...props.activity,
+      type: data.type,
+      status: data.status,
+      description: data.description,
+      estimateDate: translateDate({ date: data.estimateDate }),
+      plantation,
+      user,
+      agriculturalInput,
+      quantityUsed: data.quantityUsed
+        ? parseFloat(data.quantityUsed)
+        : undefined,
+      price: data.price ? parseFloat(data.price) : undefined,
+      realProdutivity: data.realProdutivity
+        ? parseFloat(data.realProdutivity)
+        : undefined,
+      estimateProdutivity: data.estimateProdutivity
+        ? parseFloat(data.estimateProdutivity)
+        : undefined,
+    })
+
+    if (data.image[0]) activity.image = data.image[0]
+
+    console.log(activity)
+
+    const activityService = new ActivityService()
+    const success = await activityService.updateActivity(activity)
+
+    if (!success) return
 
     router.push('/myaccount/activities')
   }
 
   useEffect(() => {
-    getAssociates(watch('plantationId')).then((data) => setUsers(data))
+    getAssociates(parseInt(watch('plantationId'))).then((data) =>
+      setUsers(data),
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch('plantationId')])
 
   useEffect(() => {
-    console.log({
-      type: props.data.type,
-      agriculturalInputId: props.data.agriculturalInputId,
-      chargeIn: props.data.chargeIn,
-      description: props.data.description,
-      estimateDate: props.data.estimateDate,
-      estimateProdutivity: props.data.estimateProdutivity,
-      plantationId: props.data.plantationId,
-      status: props.data.status,
-      price: props.data.price,
-      quantityUsed: props.data.quantityUsed,
-      realProdutivity: props.data.realProdutivity,
-    })
-
     updateActivityForm.reset({
-      type: props.data.type,
-      agriculturalInputId: props.data.agriculturalInputId,
-      chargeIn: props.data.chargeIn,
-      description: props.data.description,
-      estimateDate: props.data.estimateDate,
-      estimateProdutivity: props.data.estimateProdutivity,
-      plantationId: props.data.plantationId,
-      status: props.data.status,
-      price: props.data.price,
-      quantityUsed: props.data.quantityUsed,
-      realProdutivity: props.data.realProdutivity,
+      type: props.activity.type,
+      imagePath: props.activity.imagePath,
+      agriculturalInputId: props.activity.agriculturalInput?.id.toString(),
+      chargeIn: props.activity.user.id?.toString(),
+      description: props.activity.description,
+      estimateDate: formatDate({
+        date: props.activity.estimateDate,
+        format: 'YYYY-MM-DD',
+      }),
+      estimateProdutivity: props.activity.estimateProdutivity?.toString(),
+      plantationId: props.activity.plantation.id?.toString(),
+      status: props.activity.status,
+      price: props.activity.price?.toString(),
+      quantityUsed: props.activity.quantityUsed?.toString(),
+      realProdutivity: props.activity.realProdutivity?.toString(),
     })
   }, [])
 
@@ -108,26 +133,21 @@ export default function UpdateActivityForm(props: UpdateActivityFormProps) {
       >
         <div className="flex w-full flex-col gap-4">
           <Form.Field>
+            <Form.Label htmlFor="image">Foto</Form.Label>
+            <Form.InputFile
+              name="image"
+              previewName="imagePath"
+              placeholder="Adicione uma foto"
+            />
+            <Form.ErrorMessage field="image" />
+          </Form.Field>
+
+          <Form.Field>
             <Form.Label htmlFor="status">Status</Form.Label>
             <Form.Select name="status">
-              <Form.SelectOption
-                selected={props.data.status === 'PENDING'}
-                value="PENDING"
-              >
-                Pendente
-              </Form.SelectOption>
-              <Form.SelectOption
-                selected={props.data.status === 'FINISHED'}
-                value="FINISHED"
-              >
-                Concluída
-              </Form.SelectOption>
-              <Form.SelectOption
-                selected={props.data.status === 'FORBIDDEN'}
-                value="FORBIDDEN"
-              >
-                Impedida
-              </Form.SelectOption>
+              <Form.SelectOption value="PENDING">Pendente</Form.SelectOption>
+              <Form.SelectOption value="FINISHED">Concluída</Form.SelectOption>
+              <Form.SelectOption value="FORBIDDEN">Impedida</Form.SelectOption>
             </Form.Select>
             <Form.ErrorMessage field="status" />
           </Form.Field>
@@ -135,130 +155,105 @@ export default function UpdateActivityForm(props: UpdateActivityFormProps) {
           <Form.Field>
             <Form.Label htmlFor="type">Tipo de atividade</Form.Label>
             <Form.Select name="type">
-              <Form.SelectOption
-                selected={props.data.type === 'AGRICULTURAL_INPUT'}
-                value="AGRICULTURAL_INPUT"
-              >
+              <Form.SelectOption value="AGRICULTURAL_INPUT">
                 Utilização de insumo
               </Form.SelectOption>
-              <Form.SelectOption
-                selected={props.data.type === 'HARVEST'}
-                value="HARVEST"
-              >
-                Colheita
-              </Form.SelectOption>
-              <Form.SelectOption
-                selected={props.data.type === 'IRRIGATION'}
-                value="IRRIGATION"
-              >
+              <Form.SelectOption value="HARVEST">Colheita</Form.SelectOption>
+              <Form.SelectOption value="IRRIGATION">
                 Irrigação
               </Form.SelectOption>
-              <Form.SelectOption
-                selected={props.data.type === 'PARING'}
-                value="PARING"
-              >
-                Poda
-              </Form.SelectOption>
-              <Form.SelectOption
-                selected={props.data.type === 'OTHER'}
-                value="OTHER"
-              >
-                Outro
-              </Form.SelectOption>
+              <Form.SelectOption value="PARING">Poda</Form.SelectOption>
+              <Form.SelectOption value="OTHER">Outro</Form.SelectOption>
             </Form.Select>
             <Form.ErrorMessage field="type" />
           </Form.Field>
 
-          {watch('type') === 'AGRICULTURAL_INPUT' && (
-            <>
-              <Form.Field>
-                <Form.Label htmlFor="agriculturalInputId">
-                  Tipo de insumo
-                </Form.Label>
-                <Form.Select name="agriculturalInputId">
-                  {props.agriculturalInputs.map((agriculturalInput: any) => (
-                    <Form.SelectOption
-                      key={agriculturalInput.id}
-                      value={agriculturalInput.id}
-                      selected={
-                        props.data.agriculturalInputId === agriculturalInput.id
-                      }
-                    >
-                      <span>{agriculturalInput.name}</span>
-                    </Form.SelectOption>
-                  ))}
-                </Form.Select>
-                <Form.ErrorMessage field="agriculturalInputId" />
-                <span>
-                  {props.agriculturalInputs[
-                    parseInt(watch('agriculturalInputId')) - 1
-                  ]?.rules ?? ''}
-                </span>
-              </Form.Field>
+          <div
+            data-show={watch('type') === 'AGRICULTURAL_INPUT'}
+            className="hidden data-[show=true]:block"
+          >
+            <Form.Field>
+              <Form.Label htmlFor="agriculturalInputId">
+                Tipo de insumo
+              </Form.Label>
+              <Form.Select name="agriculturalInputId">
+                {props.agriculturalInputs.map((agriculturalInput: any) => (
+                  <Form.SelectOption
+                    key={agriculturalInput.id}
+                    value={agriculturalInput.id}
+                  >
+                    {agriculturalInput.name}
+                  </Form.SelectOption>
+                ))}
+              </Form.Select>
+              <Form.ErrorMessage field="agriculturalInputId" />
+              <span>
+                {props.agriculturalInputs.find((agriculturalInput) => {
+                  return (
+                    agriculturalInput.id ===
+                    parseInt(watch('agriculturalInputId'))
+                  )
+                })?.rules ?? ''}
+              </span>
+            </Form.Field>
 
-              <Form.Field>
-                <Form.Label htmlFor="quantityUsed">
-                  Quantidade utilizada do insumo
-                </Form.Label>
-                <Form.Input
-                  type="text"
-                  name="quantityUsed"
-                  placeholder="Forneça o quantidade utilizada"
-                />
-                <Form.ErrorMessage field="quantityUsed" />
-              </Form.Field>
+            <Form.Field>
+              <Form.Label htmlFor="quantityUsed">
+                Quantidade utilizada do insumo
+              </Form.Label>
+              <Form.Input
+                type="text"
+                name="quantityUsed"
+                placeholder="Forneça o quantidade utilizada"
+              />
+              <Form.ErrorMessage field="quantityUsed" />
+            </Form.Field>
 
-              <Form.Field>
-                <Form.Label htmlFor="price">
-                  Valor do insumo utilizado
-                </Form.Label>
-                <Form.Input
-                  type="text"
-                  name="price"
-                  placeholder="Forneça o valor do insumo utilizado"
-                />
-                <Form.ErrorMessage field="price" />
-              </Form.Field>
-            </>
-          )}
+            <Form.Field>
+              <Form.Label htmlFor="price">Valor do insumo utilizado</Form.Label>
+              <Form.Input
+                type="text"
+                name="price"
+                placeholder="Forneça o valor do insumo utilizado"
+              />
+              <Form.ErrorMessage field="price" />
+            </Form.Field>
+          </div>
 
-          {watch('type') === 'HARVEST' && (
-            <>
-              <Form.Field>
-                <Form.Label htmlFor="estimateProdutivity">
-                  Produtividade estimada
-                </Form.Label>
-                <Form.Input
-                  type="text"
-                  name="estimateProdutivity"
-                  placeholder="Forneça o produtividade estimada"
-                />
-                <Form.ErrorMessage field="estimateProdutivity" />
-              </Form.Field>
+          <div
+            data-show={watch('type') === 'HARVEST'}
+            className="hidden data-[show=true]:block"
+          >
+            <Form.Field>
+              <Form.Label htmlFor="estimateProdutivity">
+                Produtividade estimada
+              </Form.Label>
+              <Form.Input
+                type="text"
+                name="estimateProdutivity"
+                placeholder="Forneça o produtividade estimada"
+              />
+              <Form.ErrorMessage field="estimateProdutivity" />
+            </Form.Field>
 
-              <Form.Field>
-                <Form.Label htmlFor="realProdutivity">
-                  Produtividade real
-                </Form.Label>
-                <Form.Input
-                  type="text"
-                  name="realProdutivity"
-                  placeholder="Forneça o produtividade real"
-                />
-                <Form.ErrorMessage field="realProdutivity" />
-              </Form.Field>
-            </>
-          )}
+            <Form.Field>
+              <Form.Label htmlFor="realProdutivity">
+                Produtividade real
+              </Form.Label>
+              <Form.Input
+                type="text"
+                name="realProdutivity"
+                placeholder="Forneça o produtividade real"
+              />
+              <Form.ErrorMessage field="realProdutivity" />
+            </Form.Field>
+          </div>
 
           <Form.Field>
             <Form.Label htmlFor="plantationId">Plantação</Form.Label>
             <Form.Select name="plantationId">
               {props.plantations.map((plantation) => (
-                <Form.SelectOption
-                  key={plantation.id}
-                  selected={props.data.plantationId === plantation.id}
-                  value={plantation.id}
-                >
+                <Form.SelectOption key={plantation.id} value={plantation.id}>
                   {plantation.name}
                 </Form.SelectOption>
               ))}
@@ -289,18 +284,12 @@ export default function UpdateActivityForm(props: UpdateActivityFormProps) {
           <Form.Field>
             <Form.Label htmlFor="chargeIn">Responsável</Form.Label>
             <Form.Select name="chargeIn">
-              <Form.SelectOption
-                selected={props.data.chargeIn === props.userAuth.id}
-                value={props.userAuth.id}
-              >
-                (Eu) {props.userAuth.name}
+              <Form.SelectOption value={props.user.id}>
+                (Eu) {props.user.name}
               </Form.SelectOption>
+
               {users.map((user) => (
-                <Form.SelectOption
-                  key={user.id}
-                  selected={props.data.chargeIn === user.id}
-                  value={user.id}
-                >
+                <Form.SelectOption key={user.id} value={user.id}>
                   {user.name}
                 </Form.SelectOption>
               ))}

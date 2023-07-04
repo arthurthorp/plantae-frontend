@@ -10,9 +10,13 @@ import { Form } from '@/components/Form/parts'
 
 import { CreateUserData, createUserSchema } from '@/schemas/createUser'
 
-import axios from 'axios'
+import { User } from '@/model/User'
 
-export default function Register() {
+import { UserService } from '@/service/user/UserClientService'
+
+export default function Register(props: {
+  searchParams: { plantation: string }
+}) {
   const router = useRouter()
 
   const createUserForm = useForm<CreateUserData>({
@@ -20,9 +24,23 @@ export default function Register() {
   })
 
   async function createUser(data: CreateUserData) {
-    const response = await axios.post('http://0.0.0.0/api/auth/register', data)
+    const plantation = props.searchParams.plantation
 
-    if (!response.data.token) return
+    const user = new User({
+      name: data.name,
+      email: data.email,
+      birthDate: data.birthDate,
+      phone: data.phone,
+      password: data.password,
+      isOwner: plantation === '',
+    })
+
+    console.log(user)
+
+    const userService = new UserService()
+    const success = await userService.createUser(user, plantation)
+
+    if (!success) return
 
     router.push('/signin')
   }

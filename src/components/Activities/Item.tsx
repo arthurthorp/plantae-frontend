@@ -1,7 +1,7 @@
 'use client'
 
+import { formatDate } from '@/utils/formatDate'
 import { CalendarBlank, Plant, User } from '@phosphor-icons/react'
-import moment from 'moment'
 import Link from 'next/link'
 
 interface ActivityItemProps {
@@ -13,37 +13,37 @@ interface ActivityItemProps {
   date: Date
 }
 
-function formatActivityType(type: string): string {
-  switch (type) {
-    case 'AGRICULTURAL_INPUT':
-      return 'Aplicação de insumo'
-    case 'IRRIGATION':
-      return 'Irrigação'
-    case 'PARING':
-      return 'Poda'
-    case 'HARVEST':
-      return 'Colheita'
-    case 'OTHER':
-      return 'Outros'
-  }
-
-  return ''
-}
-
-function formatActivityStatus(type: string): string {
-  switch (type) {
-    case 'PENDING':
-      return 'Pendente'
-    case 'FORBIDDEN':
-      return 'Impedida'
-    case 'FINISHED':
-      return 'Concluída'
-  }
-
-  return ''
-}
-
 export default function ActivityItem(props: ActivityItemProps) {
+  function formatActivityType(): string {
+    switch (props.type) {
+      case 'AGRICULTURAL_INPUT':
+        return 'Aplicação de insumo'
+      case 'IRRIGATION':
+        return 'Irrigação'
+      case 'PARING':
+        return 'Poda'
+      case 'HARVEST':
+        return 'Colheita'
+      case 'OTHER':
+        return 'Outros'
+    }
+
+    return ''
+  }
+
+  function formatActivityStatus(): string {
+    switch (props.status) {
+      case 'PENDING':
+        return 'Pendente'
+      case 'FORBIDDEN':
+        return 'Impedida'
+      case 'FINISHED':
+        return 'Concluída'
+    }
+
+    return ''
+  }
+
   return (
     <Link
       href={`/myaccount/activities/${props.id}`}
@@ -52,7 +52,7 @@ export default function ActivityItem(props: ActivityItemProps) {
       <div className="flex w-full items-center justify-start gap-2 text-orange">
         <Plant weight="bold" size="1rem" />
         <span className="flex-1 text-base font-semibold capitalize leading-none">
-          {formatActivityType(props.type)}
+          {formatActivityType()}
         </span>
       </div>
 
@@ -69,7 +69,7 @@ export default function ActivityItem(props: ActivityItemProps) {
               props.status === 'FINISHED' && 'text-green'
             }`}
           >
-            {formatActivityStatus(props.status)}
+            {formatActivityStatus()}
           </span>
         </div>
 
@@ -89,7 +89,7 @@ export default function ActivityItem(props: ActivityItemProps) {
         <div className="flex items-center justify-between gap-2 text-gray-03">
           <CalendarBlank weight="bold" size="1rem" />
           <span className="text-base font-normal leading-none">
-            {moment(props.date).format('DD MMM YYYY')}
+            {formatDate({ date: props.date })}
           </span>
         </div>
       </div>

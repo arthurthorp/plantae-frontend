@@ -1,16 +1,18 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import axios from 'axios'
 import { FormProvider, useForm } from 'react-hook-form'
 
 import { Form } from '@/components/Form/parts'
 
+import { Activity } from '@/model/Activity'
+
+import { History } from '@/model/History'
 import { CreateHistoryData, createHistorySchema } from '@/schemas/createHistory'
-import { parseCookies } from 'nookies'
+import { ActivityService } from '@/service/activity/ActivityClientService'
 
 interface NewHistoryFormProps {
-  activityId: string
+  activity: Activity
   isImpediment?: boolean
   close: () => void
 }
@@ -21,25 +23,20 @@ export default function NewHistoryForm(props: NewHistoryFormProps) {
   })
 
   async function handleCreateHistory(data: CreateHistoryData) {
-    const { 'plantae.token': token } = parseCookies()
+    if (!props.activity.id) return
 
-    let newData: any = { ...data }
+    console.log(data)
 
-    if (props.isImpediment) {
-      newData = { ...newData, isImpediment: 1 }
-    }
+    const body = new History({
+      description: data.description,
+      image: data.image[0],
+      isImpediment: props.isImpediment ?? false,
+    })
 
-    console.log(token, newData)
+    const activityService = new ActivityService()
+    const success = activityService.createHistory(props.activity.id, body)
 
-    const response = await axios.post(
-      `http://0.0.0.0/api/activities/${props.activityId}/histories`,
-      newData,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      },
-    )
-
-    console.log(response)
+    if (!success) return
 
     props.close()
   }
@@ -51,6 +48,14 @@ export default function NewHistoryForm(props: NewHistoryFormProps) {
         onSubmit={createHistoryForm.handleSubmit(handleCreateHistory)}
       >
         <div className="flex w-full flex-col gap-4">
+          <Form.Field>
+            <Form.Label htmlFor="image">
+              Foto {props.isImpediment ? 'do impedimento' : 'da execução'}
+            </Form.Label>
+            <Form.InputFile name="image" placeholder="Adicione uma foto" />
+            <Form.ErrorMessage field="image" />
+          </Form.Field>
+
           <Form.Field>
             <Form.Label htmlFor="description">
               Descrição {props.isImpediment ? 'do impedimento' : 'da execução'}

@@ -1,20 +1,11 @@
 import ActivitiesList from '@/components/Activities/List'
 import HeaderActivities from '@/components/Header/Activities'
-import { cookies } from 'next/headers'
+import { ActivityService } from '@/service/activity/ActivityServerService'
 
 async function getActivities() {
-  const cookiesStore = cookies()
-  const token = cookiesStore.get('plantae.token')?.value ?? ''
-
-  const res = await fetch('http://0.0.0.0/api/activities', {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-
-  const response = await res.json()
-
-  if (!response.objects) return
-
-  return response.objects
+  const activityService = new ActivityService()
+  const activities = await activityService.listActivities()
+  return activities
 }
 
 export default async function Activities() {

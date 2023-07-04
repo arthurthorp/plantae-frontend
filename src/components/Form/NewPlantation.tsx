@@ -1,17 +1,21 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import axios from 'axios'
 import { useRouter } from 'next/navigation'
-import { parseCookies } from 'nookies'
 import { FormProvider, useForm } from 'react-hook-form'
 
 import { Form } from '@/components/Form/parts'
+
+import { Plantation } from '@/model/Plantation'
 
 import {
   CreatePlantationData,
   createPlantationSchema,
 } from '@/schemas/createPlantation'
+
+import { PlantationService } from '@/service/plantation/PlantationClientService'
+
+import { translateDate } from '@/utils/translateDate'
 
 export default function NewPlantationForm() {
   const router = useRouter()
@@ -21,13 +25,19 @@ export default function NewPlantationForm() {
   })
 
   async function handleCreatePlantation(data: CreatePlantationData) {
-    const { 'plantae.token': token } = parseCookies()
-
-    const response = await axios.post('http://0.0.0.0/api/plantations', data, {
-      headers: { Authorization: `Bearer ${token}` },
+    const plantation = new Plantation({
+      cultivation: data.cultivation,
+      description: data.description,
+      name: data.name,
+      plantationSize: parseFloat(data.plantationSize),
+      plantingDate: translateDate({ date: data.plantingDate }),
+      estimateHarvestDate: translateDate({ date: data.estimateHarvestDate }),
     })
 
-    if (!response.data.object) return
+    const plantationService = new PlantationService()
+    const success = await plantationService.createPLantation(plantation)
+
+    if (!success) return
 
     router.push('/myaccount/plantations')
   }
@@ -96,7 +106,7 @@ export default function NewPlantationForm() {
               Tamanho da plantação
             </Form.Label>
             <Form.Input
-              type="number"
+              type="text"
               name="plantationSize"
               placeholder="Forneça o tamanho da plantação"
             />

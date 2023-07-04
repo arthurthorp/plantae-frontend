@@ -1,20 +1,11 @@
 import HeaderPlantations from '@/components/Header/Plantations'
 import PlantationList from '@/components/Plantation/List'
-import { cookies } from 'next/headers'
+import { PlantationService } from '@/service/plantation/PlantationServerService'
 
 async function getPlantations() {
-  const cookiesStore = cookies()
-  const token = cookiesStore.get('plantae.token')?.value ?? ''
-
-  const res = await fetch('http://0.0.0.0/api/plantations', {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-
-  const response = await res.json()
-
-  if (!response.objects) return
-
-  return response.objects
+  const plantationService = new PlantationService()
+  const plantations = await plantationService.listPlantations()
+  return plantations
 }
 
 export default async function Plantations() {

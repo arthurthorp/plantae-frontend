@@ -2,6 +2,12 @@ import { z } from 'zod'
 
 export const createActivitySchema = z
   .object({
+    image: z
+      .custom<FileList>((value) => value instanceof FileList)
+      .refine((value) => {
+        const types = ['image/png', 'image/jpg', 'image/jpeg', 'image/webp']
+        return types.includes(value[0]?.type)
+      }, 'O arquivo deve ser um arquivo PNG, JPG, JPEG ou WEBP!'),
     type: z
       .string()
       .nonempty('O tipo é obrigatório')

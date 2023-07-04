@@ -3,11 +3,14 @@
 import { Lock, Plus } from '@phosphor-icons/react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { useState } from 'react'
+
 import NewHistoryForm from '../Form/NewHistory'
+
+import { Activity } from '@/model/Activity'
 
 interface HistoryProps {
   isImpediment?: boolean
-  activityId: string
+  activity: Activity
 }
 
 export function History(props: HistoryProps) {
@@ -21,11 +24,8 @@ export function History(props: HistoryProps) {
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>
         <button
-          className={`flex ${
-            props.isImpediment ? 'w-16 min-w-[4rem]' : 'w-full'
-          } h-16 items-center justify-center gap-2 rounded ${
-            props.isImpediment ? 'bg-red' : 'bg-blue-translucid'
-          } ${props.isImpediment ? 'text-white' : 'text-blue'}`}
+          data-isImpediment={props.isImpediment}
+          className="flex h-16 w-full items-center justify-center gap-2 rounded bg-blue-translucid text-blue data-[isImpediment=true]:w-16 data-[isImpediment=true]:min-w-[4rem] data-[isImpediment=true]:bg-red data-[isImpediment=true]:text-white"
         >
           {props.isImpediment ? (
             <Lock weight="bold" size="1.25rem" />
@@ -52,7 +52,7 @@ export function History(props: HistoryProps) {
           </Dialog.Title>
 
           <NewHistoryForm
-            activityId={props.activityId}
+            activity={props.activity}
             close={handleSubmit}
             isImpediment={props.isImpediment}
           />

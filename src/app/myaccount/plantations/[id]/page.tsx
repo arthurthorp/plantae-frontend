@@ -1,6 +1,7 @@
+import { PlantationService } from '@/service/plantation/PlantationServerService'
+
 import HeaderPlantations from '@/components/Header/Plantations'
 import TabsList from '@/components/Tabs'
-import { cookies } from 'next/headers'
 import ActivitiesPlantation from './tabs/ActivitiesPlantation'
 import AssociatesPlantation from './tabs/AssociatesPlantation'
 import InformationsPlantation from './tabs/InformationsPlantation'
@@ -10,25 +11,14 @@ interface PlantationProps {
   searchParams: { tab: string }
 }
 
-async function getPlantation(id: string) {
-  // const { 'plantae.token': token } = parseCookies()
-
-  const cookiesStore = cookies()
-  const token = cookiesStore.get('plantae.token')?.value ?? ''
-
-  const res = await fetch(`http://0.0.0.0/api/plantations/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-
-  const response = await res.json()
-
-  if (!response.object) return
-
-  return response.object
+async function getPlantation(id: number) {
+  const plantationService = new PlantationService()
+  const plantation = await plantationService.getPlantation(id)
+  return plantation
 }
 
 export default async function Plantation(props: PlantationProps) {
-  const plantation = await getPlantation(props.params.id)
+  const plantation = await getPlantation(parseInt(props.params.id))
 
   if (!plantation) return
 
@@ -62,15 +52,15 @@ export default async function Plantation(props: PlantationProps) {
 
         {(!props.searchParams.tab ||
           props.searchParams.tab === 'activities') && (
-          <ActivitiesPlantation plantationId={props.params.id} />
+          <ActivitiesPlantation plantation={plantation} />
         )}
 
         {props.searchParams.tab === 'associates' && (
-          <AssociatesPlantation plantationId={props.params.id} />
+          <AssociatesPlantation plantation={plantation} />
         )}
 
         {props.searchParams.tab === 'informations' && (
-          <InformationsPlantation plantationId={props.params.id} />
+          <InformationsPlantation plantation={plantation} />
         )}
       </div>
     </div>

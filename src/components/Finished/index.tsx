@@ -1,30 +1,32 @@
 'use client'
 
 import * as Dialog from '@radix-ui/react-dialog'
-import axios from 'axios'
-import { parseCookies } from 'nookies'
+import { useState } from 'react'
+
+import { Activity } from '@/model/Activity'
+
+import { ActivityService } from '@/service/activity/ActivityClientService'
 
 interface FinishedProps {
-  activityId: string
+  activity: Activity
 }
 
 export function Finished(props: FinishedProps) {
+  const [open, setOpen] = useState<boolean>(false)
+
   async function handleConfirmFinished() {
-    const { 'plantae.token': token } = parseCookies()
+    if (!props.activity.id) return
 
-    console.log(token)
+    const activityService = new ActivityService()
+    const success = await activityService.finishActivity(props.activity.id)
 
-    await axios.patch(
-      `http://0.0.0.0/api/activities/${props.activityId}/finish`,
-      null,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      },
-    )
+    if (!success) return
+
+    setOpen(false)
   }
 
   return (
-    <Dialog.Root>
+    <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>
         <button
           className={`flex h-16 w-full items-center justify-center gap-2 rounded bg-green text-white`}
@@ -43,14 +45,12 @@ export function Finished(props: FinishedProps) {
           </Dialog.Title>
 
           <div>
-            <Dialog.Close asChild>
-              <button
-                onClick={() => handleConfirmFinished()}
-                className="flex h-16 w-full items-center justify-center rounded bg-green text-white"
-              >
-                Sim, marcar como concluída
-              </button>
-            </Dialog.Close>
+            <button
+              onClick={() => handleConfirmFinished()}
+              className="flex h-16 w-full items-center justify-center rounded bg-green text-white"
+            >
+              Sim, marcar como concluída
+            </button>
 
             <Dialog.Close asChild>
               <button className="flex h-16 w-full items-center justify-center rounded bg-transparent text-gray-03">

@@ -3,73 +3,22 @@ import StatusActivity from './tabs/StatusActivity'
 
 import HeaderActivities from '@/components/Header/Activities'
 import TabsList from '@/components/Tabs'
-import { cookies } from 'next/headers'
+
+import { ActivityService } from '@/service/activity/ActivityServerService'
 
 interface ActivityProps {
   params: { id: string }
   searchParams: { tab: string }
 }
 
-async function getAgriculturalInput() {
-  const res = await fetch('http://0.0.0.0/api/agricultural-inputs')
-
-  const response = await res.json()
-
-  if (!response.objects) return
-
-  return response.objects
-}
-
-async function getPlantations() {
-  const cookiesStore = cookies()
-  const token = cookiesStore.get('plantae.token')?.value ?? ''
-
-  const res = await fetch('http://0.0.0.0/api/plantations', {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-
-  const response = await res.json()
-
-  if (!response.objects) return
-
-  return response.objects
-}
-
-async function getUserAuthenticated() {
-  const cookiesStore = cookies()
-  const token = cookiesStore.get('plantae.token')?.value ?? ''
-
-  const res = await fetch('http://0.0.0.0/api/user', {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-
-  const response = await res.json()
-
-  if (!response.object) return
-
-  return response.object
-}
-
-async function getActivity(id: string) {
-  const cookiesStore = cookies()
-  const token = cookiesStore.get('plantae.token')?.value ?? ''
-
-  const res = await fetch(`http://0.0.0.0/api/activities/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-
-  const response = await res.json()
-
-  if (!response.object) return
-
-  return response.object
+async function getActivity(id: number) {
+  const activityService = new ActivityService()
+  const activities = await activityService.getActivity(id)
+  return activities
 }
 
 export default async function Activity(props: ActivityProps) {
-  const activity = await getActivity(props.params.id)
-  const agriculturalInput = await getAgriculturalInput()
-  const user = await getUserAuthenticated()
-  const plantations = await getPlantations()
+  const activity = await getActivity(parseInt(props.params.id))
 
   if (!activity) return
 
@@ -99,16 +48,11 @@ export default async function Activity(props: ActivityProps) {
         />
 
         {(!props.searchParams.tab || props.searchParams.tab === 'status') && (
-          <StatusActivity activityId={props.params.id} />
+          <StatusActivity activity={activity} />
         )}
 
         {props.searchParams.tab === 'informations' && (
-          <InformationsActivity
-            activityId={props.params.id}
-            agriculturalInputs={agriculturalInput}
-            plantations={plantations}
-            userAuth={user}
-          />
+          <InformationsActivity activity={activity} />
         )}
       </div>
     </div>

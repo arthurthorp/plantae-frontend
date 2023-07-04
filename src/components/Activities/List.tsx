@@ -9,21 +9,17 @@ interface ActivitiesListProps {
 export default function ActivitiesList(props: ActivitiesListProps) {
   return (
     <div>
-      {props.activities.map((activity) => {
-        console.log(activity)
-
-        return (
-          <ActivitiesItem
-            key={activity.id}
-            id={activity.id}
-            type={activity.type}
-            status={activity.status}
-            description={activity.description}
-            user={activity.user?.name ?? '-'}
-            date={new Date(activity.estimateDate)}
-          />
-        )
-      })}
+      {props.activities.map((activity) => (
+        <ActivitiesItem
+          key={activity.id}
+          id={activity.id as number}
+          type={activity.type}
+          status={activity.status}
+          description={activity.description}
+          user={activity.user?.name ?? '-'}
+          date={new Date(activity.estimateDate)}
+        />
+      ))}
     </div>
   )
 }

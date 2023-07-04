@@ -1,43 +1,30 @@
-'use client'
+import CopyToClipboard from '@/components/CopyToClipboard'
+import { Plantation } from '@/model/Plantation'
+import { PlantationService } from '@/service/plantation/PlantationServerService'
 
-import { parseCookies } from 'nookies'
-
-async function getAssociates(plantationId: string) {
-  const { 'plantae.token': token } = parseCookies()
-
-  const res = await fetch(
-    `http://0.0.0.0/api/plantations/${plantationId}/associates`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    },
-  )
-
-  const response = await res.json()
-
-  if (!response.object) return
-
-  return response.object
+async function getAssociates(plantationId: number) {
+  const plantationService = new PlantationService()
+  const associates = await plantationService.getAssociates(plantationId)
+  return associates
 }
 
-export default async function AssociatesPlantation(props: {
-  plantationId: string
-}) {
-  const associates = await getAssociates(props.plantationId)
+interface AssociatesPlantationProps {
+  plantation: Plantation
+}
 
-  function handleCopyAssociateLink() {
-    navigator.clipboard.writeText(
-      `http://localhost:3000/register?plantation=${props.plantationId}`,
-    )
-  }
+export default async function AssociatesPlantation(
+  props: AssociatesPlantationProps,
+) {
+  if (!props.plantation.id) return
+
+  const associates = await getAssociates(props.plantation.id)
 
   return (
     <div className="flex w-full flex-col gap-8">
-      <button
-        onClick={() => handleCopyAssociateLink()}
-        className="flex h-16 w-full items-center justify-center rounded bg-blue-translucid text-base font-medium leading-none text-blue"
-      >
-        Copiar link para associados
-      </button>
+      <CopyToClipboard
+        title="Copiar link para associados"
+        copy={`http://localhost:3000/register?plantation=${props.plantation.id}`}
+      />
 
       <div className="flex flex-col">
         <h3 className="w-full text-base font-semibold leading-none text-brown">

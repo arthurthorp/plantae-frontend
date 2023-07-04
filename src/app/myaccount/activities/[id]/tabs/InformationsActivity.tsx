@@ -1,64 +1,45 @@
-import axios from 'axios'
-import { cookies } from 'next/headers'
-
 import UpdateActivityForm from '@/components/Form/UpdateActivity'
 
-async function getActivity(id: string) {
-  const cookiesStore = cookies()
-  const token = cookiesStore.get('plantae.token')?.value ?? ''
+import { Activity } from '@/model/Activity'
 
-  const response = await axios.get(`http://0.0.0.0/api/activities/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
+import { AgriculturalInputService } from '@/service/agriculturalInput/AgriculturalInputServerService'
+import { PlantationService } from '@/service/plantation/PlantationServerService'
+import { UserService } from '@/service/user/UserServerService'
 
-  if (!response.data.object) return
+async function listAgriculturalInputs() {
+  const agriculturalInputService = new AgriculturalInputService()
+  const agriculturalInputs =
+    await agriculturalInputService.listAgriculturalInput()
+  return agriculturalInputs
+}
 
-  return response.data.object
+async function listPlantations() {
+  const plantationService = new PlantationService()
+  const plantations = await plantationService.listPlantations()
+  return plantations
+}
+
+async function getUserAuthenticated() {
+  const userService = new UserService()
+  const user = await userService.getUserAuthenticated()
+  return user
 }
 
 export default async function InformationsActivity(props: {
-  activityId: string
-  agriculturalInputs: any[]
-  plantations: any[]
-  userAuth: any
+  activity: Activity
 }) {
-  const activity = await getActivity(props.activityId)
+  if (!props.activity.id) return
 
-  if (!activity) return
+  const agriculturalInputs = await listAgriculturalInputs()
+  const plantations = await listPlantations()
+  const user = await getUserAuthenticated()
 
   return (
     <UpdateActivityForm
-      activityId={props.activityId}
-      agriculturalInputs={props.agriculturalInputs}
-      plantations={props.plantations}
-      userAuth={props.userAuth}
-      data={{
-        type: activity.type ? activity.type.toString() : '',
-        agriculturalInputId: activity.agriculturalInputId
-          ? activity.agriculturalInputId.toString()
-          : '',
-        chargeIn: activity.chargeIn ? activity.chargeIn.toString() : '',
-        description: activity.description
-          ? activity.description.toString()
-          : '',
-        estimateDate: activity.estimateDate
-          ? activity.estimateDate.toString()
-          : '',
-        estimateProdutivity: activity.estimateProdutivity
-          ? activity.estimateProdutivity.toString()
-          : '',
-        plantationId: activity.plantationId
-          ? activity.plantationId.toString()
-          : '',
-        price: activity.price ? activity.price.toString() : '',
-        quantityUsed: activity.quantityUsed
-          ? activity.quantityUsed.toString()
-          : '',
-        realProdutivity: activity.realProdutivity
-          ? activity.realProdutivity.toString()
-          : '',
-        status: activity.status ? activity.status.toString() : '',
-      }}
+      activity={JSON.parse(JSON.stringify(props.activity))}
+      agriculturalInputs={JSON.parse(JSON.stringify(agriculturalInputs))}
+      plantations={JSON.parse(JSON.stringify(plantations ?? []))}
+      user={JSON.parse(JSON.stringify(user))}
     />
   )
 }

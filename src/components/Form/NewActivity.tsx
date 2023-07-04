@@ -1,17 +1,22 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import axios from 'axios'
 import { useRouter } from 'next/navigation'
 import { parseCookies } from 'nookies'
 import { FormProvider, useForm } from 'react-hook-form'
 
 import { Form } from '@/components/Form/parts'
 
+import { Activity } from '@/model/Activity'
 import {
   CreateActivityData,
   createActivitySchema,
 } from '@/schemas/createActivity'
+import { ActivityService } from '@/service/activity/ActivityClientService'
+import { AgriculturalInputService } from '@/service/agriculturalInput/AgriculturalInputClientService'
+import { PlantationService } from '@/service/plantation/PlantationClientService'
+import { UserService } from '@/service/user/UserClientService'
+import { translateDate } from '@/utils/translateDate'
 import { useEffect, useState } from 'react'
 
 interface NewActivityFormProps {
@@ -48,24 +53,57 @@ export default function NewActivityForm(props: NewActivityFormProps) {
   const { watch } = createActivityForm
 
   async function handleCreateActivity(data: CreateActivityData) {
-    const { 'plantae.token': token } = parseCookies()
+    console.log('teste')
 
-    const newDate = {
-      ...data,
-      status: 'PENDING',
-    }
-
-    const response = await axios.post(
-      'http://0.0.0.0/api/activities',
-      newDate,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      },
+    const plantationService = new PlantationService()
+    const plantation = await plantationService.getPlantation(
+      parseInt(data.plantationId),
     )
 
-    if (!response.data.object) return
+    const userService = new UserService()
+    const user = await userService.getUser(parseInt(data.chargeIn))
+
+    const agriculturalInputService = new AgriculturalInputService()
+    const agriculturalInput =
+      await agriculturalInputService.getAgriculturalInput(
+        parseInt(data.agriculturalInputId),
+      )
+
+    const activity = new Activity({
+      type: data.type,
+      image: data.image[0],
+      status: 'PENDING',
+      description: data.description,
+      estimateDate: translateDate({ date: data.estimateDate }),
+      plantation,
+      user,
+      agriculturalInput,
+      estimateProdutivity: data.estimateProdutivity
+        ? parseFloat(data.estimateProdutivity)
+        : undefined,
+    })
+
+    const activityService = new ActivityService()
+    const success = await activityService.createActivity(activity)
+
+    if (!success) return
 
     router.push('/myaccount/activities')
+
+    // const { 'plantae.token': token } = parseCookies()
+    // const newData = {
+    //   ...data,
+    //   status: 'PENDING',
+    // }
+    // const response = await axios.post(
+    //   'http://0.0.0.0/api/activities',
+    //   newData,
+    //   {
+    //     headers: { Authorization: `Bearer ${token}` },
+    //   },
+    // )
+    // if (!response.data.object) return
+    // router.push('/myaccount/activities')
   }
 
   useEffect(() => {
@@ -80,9 +118,15 @@ export default function NewActivityForm(props: NewActivityFormProps) {
       >
         <div className="flex w-full flex-col gap-4">
           <Form.Field>
+            <Form.Label htmlFor="image">Foto</Form.Label>
+            <Form.InputFile name="image" placeholder="Adicione uma foto" />
+            <Form.ErrorMessage field="image" />
+          </Form.Field>
+
+          <Form.Field>
             <Form.Label htmlFor="type">Tipo de atividade</Form.Label>
             <Form.Select name="type">
-              <Form.SelectOption selected value="AGRICULTURA_INPUT">
+              <Form.SelectOption value="AGRICULTURA_INPUT">
                 Utilização de insumo
               </Form.SelectOption>
               <Form.SelectOption value="HARVEST">Colheita</Form.SelectOption>
@@ -95,7 +139,10 @@ export default function NewActivityForm(props: NewActivityFormProps) {
             <Form.ErrorMessage field="type" />
           </Form.Field>
 
-          {watch('type') === 'AGRICULTURA_INPUT' && (
+          <div
+            data-show={watch('type') === 'AGRICULTURA_INPUT'}
+            className="hidden data-[show=true]:block"
+          >
             <Form.Field>
               <Form.Label htmlFor="agriculturalInputId">
                 Tipo de insumo
@@ -106,7 +153,7 @@ export default function NewActivityForm(props: NewActivityFormProps) {
                     key={agriculturalInput.id}
                     value={agriculturalInput.id}
                   >
-                    <span>{agriculturalInput.name}</span>
+                    {agriculturalInput.name}
                   </Form.SelectOption>
                 ))}
               </Form.Select>
@@ -117,9 +164,12 @@ export default function NewActivityForm(props: NewActivityFormProps) {
                 ]?.rules ?? ''}
               </span>
             </Form.Field>
-          )}
+          </div>
 
-          {watch('type') === 'HARVEST' && (
+          <div
+            data-show={watch('type') === 'HARVEST'}
+            className="hidden data-[show=true]:block"
+          >
             <Form.Field>
               <Form.Label htmlFor="estimateProdutivity">
                 Produtividade estimada
@@ -131,7 +181,7 @@ export default function NewActivityForm(props: NewActivityFormProps) {
               />
               <Form.ErrorMessage field="estimateProdutivity" />
             </Form.Field>
-          )}
+          </div>
 
           <Form.Field>
             <Form.Label htmlFor="plantationId">Plantação</Form.Label>
@@ -168,7 +218,7 @@ export default function NewActivityForm(props: NewActivityFormProps) {
           <Form.Field>
             <Form.Label htmlFor="chargeIn">Responsável</Form.Label>
             <Form.Select name="chargeIn">
-              <Form.SelectOption selected value={props.userAuth.id}>
+              <Form.SelectOption value={props.userAuth.id}>
                 (Eu) {props.userAuth.name}
               </Form.SelectOption>
               {users.map((user) => (

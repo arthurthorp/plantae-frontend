@@ -26,9 +26,7 @@ export function ErrorMessage(props: ErrorMessageProps) {
 
   const fieldError = get(errors, props.field)
 
-  if (!fieldError) {
-    return null
-  }
+  if (!fieldError) return
 
   return (
     <span className="w-full text-base font-normal leading-none text-red">

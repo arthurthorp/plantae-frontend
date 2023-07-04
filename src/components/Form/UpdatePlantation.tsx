@@ -2,6 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
 
 import { Form } from '@/components/Form/parts'
@@ -11,13 +12,15 @@ import {
   createPlantationSchema,
 } from '@/schemas/createPlantation'
 
-import axios from 'axios'
-import { parseCookies } from 'nookies'
-import { useEffect } from 'react'
+import { Plantation } from '@/model/Plantation'
+
+import { PlantationService } from '@/service/plantation/PlantationClientService'
+
+import { formatDate } from '@/utils/formatDate'
+import { translateDate } from '@/utils/translateDate'
 
 interface UpdatePlantationFormProps {
-  data: CreatePlantationData
-  plantationId: string
+  plantation: Plantation
 }
 
 export default function UpdatePlantationForm(props: UpdatePlantationFormProps) {
@@ -27,32 +30,40 @@ export default function UpdatePlantationForm(props: UpdatePlantationFormProps) {
     resolver: zodResolver(createPlantationSchema),
   })
 
-  async function updatePlantation(data: Partial<CreatePlantationData>) {
-    const { 'plantae.token': token } = parseCookies()
+  async function updatePlantation(data: CreatePlantationData) {
+    const plantation = new Plantation({
+      id: props.plantation.id,
+      cultivation: data.cultivation,
+      description: data.description,
+      name: data.name,
+      plantationSize: parseFloat(data.plantationSize),
+      plantingDate: translateDate({ date: data.plantingDate }),
+      estimateHarvestDate: translateDate({ date: data.estimateHarvestDate }),
+      user: props.plantation.user,
+    })
 
-    const response = await axios.put(
-      `http://0.0.0.0/api/plantations/${props.plantationId}`,
-      data,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      },
-    )
+    const plantationService = new PlantationService()
+    const success = await plantationService.updatePlantation(plantation)
 
-    if (!response.data.object) return
+    if (!success) return
 
     router.push('/myaccount/plantations')
   }
 
   useEffect(() => {
-    console.log(props.data)
-
     updatePlantationForm.reset({
-      name: props.data.name,
-      description: props.data.description,
-      cultivation: props.data.cultivation,
-      plantingDate: props.data.plantingDate,
-      estimateHarvestDate: props.data.estimateHarvestDate,
-      plantationSize: props.data.plantationSize,
+      name: props.plantation.name,
+      description: props.plantation.description,
+      cultivation: props.plantation.cultivation,
+      plantingDate: formatDate({
+        date: props.plantation.plantingDate,
+        format: 'YYYY-MM-DD',
+      }),
+      estimateHarvestDate: formatDate({
+        date: props.plantation.estimateHarvestDate,
+        format: 'YYYY-MM-DD',
+      }),
+      plantationSize: props.plantation.plantationSize.toString(),
     })
   }, [])
 
