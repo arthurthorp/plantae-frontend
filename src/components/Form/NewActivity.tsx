@@ -32,6 +32,8 @@ async function getAssociates(plantationId: string) {
     `http://0.0.0.0/api/plantations/${plantationId}/associates`,
     {
       headers: { Authorization: `Bearer ${token}` },
+      // next: { revalidate: 1 },
+      cache: 'no-store',
     },
   )
 
@@ -89,21 +91,6 @@ export default function NewActivityForm(props: NewActivityFormProps) {
     if (!success) return
 
     router.push('/myaccount/activities')
-
-    // const { 'plantae.token': token } = parseCookies()
-    // const newData = {
-    //   ...data,
-    //   status: 'PENDING',
-    // }
-    // const response = await axios.post(
-    //   'http://0.0.0.0/api/activities',
-    //   newData,
-    //   {
-    //     headers: { Authorization: `Bearer ${token}` },
-    //   },
-    // )
-    // if (!response.data.object) return
-    // router.push('/myaccount/activities')
   }
 
   useEffect(() => {

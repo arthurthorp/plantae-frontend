@@ -20,7 +20,13 @@ export default function SignIn() {
   })
 
   async function handleSignIn(data: SignInData) {
-    const response = await axios.post('http://0.0.0.0/api/auth/login', data)
+    const response = await axios.post('http://0.0.0.0/api/auth/login', data, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        Pragma: 'no-cache',
+        Expires: '0',
+      },
+    })
 
     if (!response.data.token) return
 

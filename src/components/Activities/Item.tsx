@@ -11,6 +11,7 @@ interface ActivityItemProps {
   description: string
   user: string
   date: Date
+  isItemsShort?: boolean
 }
 
 export default function ActivityItem(props: ActivityItemProps) {
@@ -56,7 +57,10 @@ export default function ActivityItem(props: ActivityItemProps) {
         </span>
       </div>
 
-      <div className="flex flex-col items-start justify-start gap-1">
+      <div
+        data-hidden={props.isItemsShort}
+        className="flex flex-col items-start justify-start gap-1 data-[hidden]:hidden"
+      >
         <div className="flex gap-2">
           <span
             className={`rounded ${

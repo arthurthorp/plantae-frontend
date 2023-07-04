@@ -3,7 +3,10 @@ import HeaderActivities from '@/components/Header/Activities'
 import { cookies } from 'next/headers'
 
 async function getAgriculturalInput() {
-  const res = await fetch('http://0.0.0.0/api/agricultural-inputs')
+  const res = await fetch('http://0.0.0.0/api/agricultural-inputs', {
+    // next: { revalidate: 1 },
+    cache: 'no-store',
+  })
 
   const response = await res.json()
 
@@ -18,6 +21,8 @@ async function getPlantations() {
 
   const res = await fetch('http://0.0.0.0/api/plantations', {
     headers: { Authorization: `Bearer ${token}` },
+    // next: { revalidate: 1 },
+    cache: 'no-store',
   })
 
   const response = await res.json()
@@ -33,6 +38,8 @@ async function getUserAuthenticated() {
 
   const res = await fetch('http://0.0.0.0/api/user', {
     headers: { Authorization: `Bearer ${token}` },
+    // next: { revalidate: 1 },
+    cache: 'no-store',
   })
 
   const response = await res.json()

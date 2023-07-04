@@ -4,6 +4,7 @@ import ActivitiesItem from './Item'
 
 interface ActivitiesListProps {
   activities: Activity[]
+  isItemsShort?: boolean
 }
 
 export default function ActivitiesList(props: ActivitiesListProps) {
@@ -18,6 +19,7 @@ export default function ActivitiesList(props: ActivitiesListProps) {
           description={activity.description}
           user={activity.user?.name ?? '-'}
           date={new Date(activity.estimateDate)}
+          isItemsShort={props.isItemsShort}
         />
       ))}
     </div>

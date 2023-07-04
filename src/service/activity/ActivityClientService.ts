@@ -26,9 +26,14 @@ export class ActivityService {
         headers: {
           ...(this.options as any).headers,
           'Content-Type': 'multipart/form-data',
+          'Cache-Control': 'no-cache',
+          Pragma: 'no-cache',
+          Expires: '0',
         },
       },
     )
+
+    console.log(data, res)
 
     return res.statusText === 'Created'
   }
@@ -63,10 +68,13 @@ export class ActivityService {
     const response = await axios.post(
       `http://0.0.0.0/api/activities/${data.id}`,
       body,
-      this.options,
+      {
+        headers: {
+          ...(this.options as any).headers,
+          'Content-Type': 'multipart/form-data',
+        },
+      },
     )
-
-    console.log(body, response)
 
     return response.statusText === 'OK'
   }
@@ -94,8 +102,6 @@ export class ActivityService {
         'Content-Type': 'multipart/form-data',
       },
     })
-
-    console.log(body, response)
 
     return response.statusText === 'Created'
   }

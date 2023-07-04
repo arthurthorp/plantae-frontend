@@ -22,6 +22,8 @@ export class AgriculturalInputService {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,
       },
+      // next: { revalidate: 1 },
+      cache: 'no-store',
     }
   }
 

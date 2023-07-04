@@ -25,7 +25,11 @@ export class UserService {
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,
+        'Cache-Control': 'no-cache',
+        Pragma: 'no-cache',
+        Expires: '0',
       },
+      cache: 'no-store',
     }
   }
 

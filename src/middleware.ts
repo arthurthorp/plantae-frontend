@@ -12,6 +12,8 @@ export async function middleware(request: NextRequest) {
         'Content-Type': 'application/json;charset=UTF-8',
         Authorization: `Bearer ${token.value}`,
       },
+      // next: { revalidate: 1 },
+      cache: 'no-store',
     })
 
     const user = await response.json()

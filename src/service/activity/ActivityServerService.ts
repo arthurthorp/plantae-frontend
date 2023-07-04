@@ -51,6 +51,8 @@ export class ActivityService {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,
       },
+      // next: { revalidate: 1 },
+      cache: 'no-store',
     }
   }
 
@@ -116,6 +118,61 @@ export class ActivityService {
 
   async listActivities(): Promise<Activity[]> {
     const res = await fetch(`http://0.0.0.0/api/activities/`, this.options)
+
+    if (!res.ok) throw new Error('Error to fetch data from server')
+
+    const activities: { objects: ActivityResponse[] } = await res.json()
+
+    const newActivities = await Promise.all(
+      activities.objects.map(async (activity) => {
+        const agriculturalInputService = new AgriculturalInputService()
+        const agriculturalInput = activity.agriculturalInputId
+          ? await agriculturalInputService.getAgriculturalInput(
+              activity.agriculturalInputId,
+            )
+          : null
+
+        const userService = new UserService()
+        const user = await userService.getUser(activity.chargeIn)
+
+        const plantationService = new PlantationService()
+        const plantation = await plantationService.getPlantation(
+          activity.plantationId,
+        )
+
+        const newActivity = new Activity({
+          id: activity.id,
+          type: activity.type,
+          imagePath: activity.imagePath ?? undefined,
+          description: activity.description,
+          status: activity.status,
+          estimateDate: translateDate({ date: activity.estimateDate }),
+          executionDate: activity.executionDate
+            ? translateDate({ date: activity.executionDate })
+            : undefined,
+          plantation,
+          agriculturalInput: agriculturalInput ?? undefined,
+          estimateProdutivity: activity.estimateProdutivity ?? undefined,
+          realProdutivity: activity.realProdutivity ?? undefined,
+          quantityUsed: activity.quantityUsed ?? undefined,
+          price: activity.price ?? undefined,
+          user,
+          updatedAt: new Date(activity.updatedAt),
+          createdAt: new Date(activity.createdAt),
+        })
+
+        return newActivity
+      }),
+    )
+
+    return newActivities
+  }
+
+  async listActivitiesDashboard(): Promise<Activity[]> {
+    const res = await fetch(
+      `http://0.0.0.0/api/activities/dashboard`,
+      this.options,
+    )
 
     if (!res.ok) throw new Error('Error to fetch data from server')
 
